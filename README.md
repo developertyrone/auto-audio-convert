@@ -39,14 +39,25 @@ Choose option **1** for automatic installation (downloads to your home directory
 
 ## Installation
 
-### Download Pre-built Binary (Coming Soon)
+### Option 1: Download Pre-built Binary (Recommended)
+
+**Latest release:** https://github.com/developertyrone/auto-audio-convert/releases/latest
+
 ```bash
-# Linux/macOS
-curl -L https://github.com/developertyrone/auto-audio-convert/releases/latest/download/auto-audio-convert-$(uname -s)-$(uname -m) -o auto-audio-convert
-chmod +x auto-audio-convert
+# Linux (amd64)
+curl -L https://github.com/developertyrone/auto-audio-convert/releases/latest/download/auto-audio-convert-linux-amd64.tar.gz | tar xz
+sudo mv auto-audio-convert-linux-amd64 /usr/local/bin/auto-audio-convert
+
+# macOS (Apple Silicon)
+curl -L https://github.com/developertyrone/auto-audio-convert/releases/latest/download/auto-audio-convert-darwin-arm64.tar.gz | tar xz
+sudo mv auto-audio-convert-darwin-arm64 /usr/local/bin/auto-audio-convert
+
+# Windows
+# Download auto-audio-convert-windows-amd64.zip from releases page
+# Extract and add to PATH
 ```
 
-### Build from Source
+### Option 2: Build from Source
 ```bash
 git clone https://github.com/developertyrone/auto-audio-convert.git
 cd auto-audio-convert

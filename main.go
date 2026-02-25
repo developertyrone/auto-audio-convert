@@ -11,7 +11,7 @@ import (
 
 const (
 	defaultMemLimitMB = 512
-	version           = "1.0.0"
+	version           = "1.0.0" // Can be overridden by -ldflags at build time
 )
 
 func main() {

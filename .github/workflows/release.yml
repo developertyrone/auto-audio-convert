@@ -1,0 +1,187 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+permissions:
+  contents: write  # Required to create releases and upload assets
+
+jobs:
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build binaries
+        run: |
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/auto-audio-convert-linux-amd64
+          
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/auto-audio-convert-linux-arm64
+          
+          # macOS AMD64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/auto-audio-convert-darwin-amd64
+          
+          # macOS ARM64 (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/auto-audio-convert-darwin-arm64
+          
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" -o dist/auto-audio-convert-windows-amd64.exe
+
+      - name: Create release archives
+        run: |
+          cd dist
+          
+          # Linux
+          tar czf auto-audio-convert-linux-amd64.tar.gz auto-audio-convert-linux-amd64
+          tar czf auto-audio-convert-linux-arm64.tar.gz auto-audio-convert-linux-arm64
+          
+          # macOS
+          tar czf auto-audio-convert-darwin-amd64.tar.gz auto-audio-convert-darwin-amd64
+          tar czf auto-audio-convert-darwin-arm64.tar.gz auto-audio-convert-darwin-arm64
+          
+          # Windows
+          zip auto-audio-convert-windows-amd64.zip auto-audio-convert-windows-amd64.exe
+          
+          # Generate checksums
+          sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: dist/*
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: dist
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          cat << EOF > release_notes.md
+          ## Auto Audio Converter ${VERSION}
+          
+          ### 🚀 Features
+          - Batch audio conversion with recursive directory scanning
+          - Auto-download portable FFmpeg (no sudo required)
+          - Smart skip for already-converted files
+          - Resource-limited parallel processing
+          - Cross-platform support
+          
+          ### 📦 Downloads
+          
+          **Quick Install:**
+          \`\`\`bash
+          # Linux/macOS
+          curl -L https://github.com/${{ github.repository }}/releases/download/${VERSION}/auto-audio-convert-\$(uname -s | tr '[:upper:]' '[:lower:]')-\$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar xz
+          chmod +x auto-audio-convert-*
+          sudo mv auto-audio-convert-* /usr/local/bin/auto-audio-convert
+          
+          # Verify
+          auto-audio-convert --version
+          \`\`\`
+          
+          **Windows:** Download \`auto-audio-convert-windows-amd64.zip\`, extract, and add to PATH.
+          
+          ### 🔒 Verify Downloads
+          \`\`\`bash
+          sha256sum -c checksums.txt
+          \`\`\`
+          
+          ### 📖 Usage
+          \`\`\`bash
+          # Basic conversion
+          auto-audio-convert --source=/path/to/music --from=flac --to=mp3
+          
+          # Custom workers
+          auto-audio-convert --from=wav --to=ogg --workers=8
+          
+          # Auto-install FFmpeg (first run)
+          # Just choose option 1 when prompted!
+          \`\`\`
+          
+          ### 📋 Checksums
+          \`\`\`
+          $(cat dist/checksums.txt)
+          \`\`\`
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run go fmt check
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted:"
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Build test
+        run: go build -v ./...
+
+      - name: Test binary execution
+        run: |
+          go build -o auto-audio-convert
+          ./auto-audio-convert --version
