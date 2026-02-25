@@ -21,11 +21,11 @@ type ConversionStats struct {
 func targetFileExists(sourcePath, targetExt string) (bool, string) {
 	ext := filepath.Ext(sourcePath)
 	targetPath := strings.TrimSuffix(sourcePath, ext) + "." + strings.TrimPrefix(targetExt, ".")
-	
+
 	if _, err := os.Stat(targetPath); err == nil {
 		return true, targetPath
 	}
-	
+
 	return false, targetPath
 }
 
@@ -71,11 +71,11 @@ func convertFiles(files []string, targetExt string, workers int, ffmpegPath stri
 
 			for sourcePath := range jobs {
 				relPath := filepath.Base(sourcePath)
-				
+
 				// Check if already converted
 				exists, targetPath := targetFileExists(sourcePath, targetExt)
 				if exists {
-					fmt.Printf("⏭️  [Worker %d] Skipped: %s (target exists: %s)\n", 
+					fmt.Printf("⏭️  [Worker %d] Skipped: %s (target exists: %s)\n",
 						workerID, relPath, filepath.Base(targetPath))
 					atomic.AddInt32(&stats.Skipped, 1)
 					continue
@@ -84,7 +84,7 @@ func convertFiles(files []string, targetExt string, workers int, ffmpegPath stri
 				// Convert
 				fmt.Printf("🔄 [Worker %d] Converting: %s\n", workerID, relPath)
 				err := convertFile(sourcePath, targetExt, ffmpegPath)
-				
+
 				if err != nil {
 					if strings.Contains(err.Error(), "target already exists") {
 						fmt.Printf("⏭️  [Worker %d] Skipped: %s (target exists)\n", workerID, relPath)

@@ -72,7 +72,7 @@ func promptDownloadFFmpeg() bool {
 	fmt.Println("  1. Auto-download portable ffmpeg (~50-80MB) to ~/.auto-audio-convert/")
 	fmt.Println("  2. Skip (install manually)")
 	fmt.Println("\nManual installation:")
-	
+
 	switch runtime.GOOS {
 	case "linux":
 		fmt.Println("  sudo apt install ffmpeg       # Debian/Ubuntu")
@@ -85,10 +85,10 @@ func promptDownloadFFmpeg() bool {
 	}
 
 	fmt.Print("\nChoice [1/2]: ")
-	
+
 	var choice string
 	fmt.Scanln(&choice)
-	
+
 	return choice == "1" || choice == "" || strings.ToLower(choice) == "y" || strings.ToLower(choice) == "yes"
 }
 
