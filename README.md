@@ -78,6 +78,21 @@ go build -o auto-audio-convert
 ./auto-audio-convert --from=flac --to=mp3 --workers=8
 ```
 
+### Quality Control
+```bash
+# Use quality presets
+./auto-audio-convert --from=flac --to=mp3 --quality=high    # 320k bitrate
+./auto-audio-convert --from=wav --to=mp3 --quality=medium   # 192k bitrate
+./auto-audio-convert --from=flac --to=mp3 --quality=low     # 128k bitrate
+
+# Custom bitrate (overrides quality preset)
+./auto-audio-convert --from=flac --to=mp3 --bitrate=256k
+./auto-audio-convert --from=wav --to=ogg --bitrate=160k
+
+# No quality specified = FFmpeg defaults (codec-dependent)
+./auto-audio-convert --from=flac --to=mp3
+```
+
 ### Flags
 
 | Flag | Description | Default |
@@ -85,6 +100,8 @@ go build -o auto-audio-convert
 | `--source` | Source directory to scan | `.` (current dir) |
 | `--from` | Source file extension | **(required)** |
 | `--to` | Target file extension | **(required)** |
+| `--quality` | Quality preset: `low` (128k), `medium` (192k), `high` (320k) | - |
+| `--bitrate` | Custom bitrate (e.g., `256k`, `320k`) - overrides `--quality` | - |
 | `--workers` | Number of parallel workers | CPU cores / 2 |
 | `--version` | Show version | - |
 
@@ -117,6 +134,7 @@ GOOS=windows GOARCH=amd64 go build -o auto-audio-convert-windows-amd64.exe
 🎵 Auto Audio Converter v1.0.0
 📁 Source: /home/user/music
 🔄 Converting: .flac → .mp3
+🎚️  Quality: 320k
 ⚙️  Workers: 4 (CPU limit: 4 cores)
 💾 Memory limit: 512MB
 

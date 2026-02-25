@@ -14,6 +14,29 @@ const (
 	version           = "1.0.0" // Can be overridden by -ldflags at build time
 )
 
+// resolveBitrate converts quality preset or validates custom bitrate
+func resolveBitrate(quality, bitrate string) string {
+	// Custom bitrate takes priority
+	if bitrate != "" {
+		return bitrate
+	}
+
+	// Quality presets
+	switch quality {
+	case "low":
+		return "128k"
+	case "medium":
+		return "192k"
+	case "high":
+		return "320k"
+	case "":
+		return "" // No quality specified - use ffmpeg defaults
+	default:
+		log.Printf("⚠️  Warning: Unknown quality preset '%s', using ffmpeg defaults\n", quality)
+		return ""
+	}
+}
+
 func main() {
 	// Set memory limit (Go 1.19+)
 	debug.SetMemoryLimit(defaultMemLimitMB * 1024 * 1024)
@@ -23,6 +46,8 @@ func main() {
 	sourceExt := flag.String("from", "", "Source file extension (e.g., wav, flac)")
 	targetExt := flag.String("to", "", "Target file extension (e.g., mp3, ogg)")
 	workers := flag.Int("workers", runtime.NumCPU()/2, "Number of parallel workers")
+	quality := flag.String("quality", "", "Quality preset: low (128k), medium (192k), high (320k)")
+	bitrate := flag.String("bitrate", "", "Custom bitrate (e.g., 256k, 320k) - overrides quality preset")
 	showVersion := flag.Bool("version", false, "Show version")
 
 	flag.Parse()
@@ -41,9 +66,15 @@ func main() {
 		*workers = 1
 	}
 
+	// Resolve quality/bitrate
+	audioBitrate := resolveBitrate(*quality, *bitrate)
+
 	fmt.Printf("🎵 Auto Audio Converter v%s\n", version)
 	fmt.Printf("📁 Source: %s\n", *sourceDir)
 	fmt.Printf("🔄 Converting: .%s → .%s\n", *sourceExt, *targetExt)
+	if audioBitrate != "" {
+		fmt.Printf("🎚️  Quality: %s\n", audioBitrate)
+	}
 	fmt.Printf("⚙️  Workers: %d (CPU limit: %d cores)\n", *workers, runtime.NumCPU()/2)
 	fmt.Printf("💾 Memory limit: %dMB\n\n", defaultMemLimitMB)
 
@@ -81,7 +112,7 @@ func main() {
 	fmt.Printf("📂 Found %d .%s file(s)\n\n", len(files), *sourceExt)
 
 	// Process with worker pool
-	stats := convertFiles(files, *targetExt, *workers, ffmpegPath)
+	stats := convertFiles(files, *targetExt, *workers, ffmpegPath, audioBitrate)
 
 	// Summary
 	fmt.Printf("\n📊 Summary:\n")
