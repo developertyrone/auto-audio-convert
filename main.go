@@ -48,9 +48,24 @@ func main() {
 	fmt.Printf("💾 Memory limit: %dMB\n\n", defaultMemLimitMB)
 
 	// Check ffmpeg availability
-	if !checkFFmpeg() {
-		log.Fatal("❌ ffmpeg not found in PATH. Please install ffmpeg first.")
+	ffmpegPath, err := getFFmpegPath()
+	if err != nil {
+		// Prompt to download
+		if promptDownloadFFmpeg() {
+			if err := downloadFFmpeg(); err != nil {
+				log.Fatalf("❌ Failed to download ffmpeg: %v\n", err)
+			}
+			// Re-check after download
+			ffmpegPath, err = getFFmpegPath()
+			if err != nil {
+				log.Fatal("❌ FFmpeg installation failed. Please install manually.")
+			}
+		} else {
+			log.Fatal("❌ FFmpeg required. Please install it and try again.")
+		}
 	}
+
+	fmt.Printf("🎬 Using ffmpeg: %s\n", ffmpegPath)
 
 	// Scan and convert
 	files, err := scanDirectory(*sourceDir, *sourceExt)
@@ -66,7 +81,7 @@ func main() {
 	fmt.Printf("📂 Found %d .%s file(s)\n\n", len(files), *sourceExt)
 
 	// Process with worker pool
-	stats := convertFiles(files, *targetExt, *workers)
+	stats := convertFiles(files, *targetExt, *workers, ffmpegPath)
 
 	// Summary
 	fmt.Printf("\n📊 Summary:\n")

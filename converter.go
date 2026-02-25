@@ -17,12 +17,6 @@ type ConversionStats struct {
 	Failed    int32
 }
 
-// checkFFmpeg verifies ffmpeg is available
-func checkFFmpeg() bool {
-	_, err := exec.LookPath("ffmpeg")
-	return err == nil
-}
-
 // targetFileExists checks if the target file already exists
 func targetFileExists(sourcePath, targetExt string) (bool, string) {
 	ext := filepath.Ext(sourcePath)
@@ -36,7 +30,7 @@ func targetFileExists(sourcePath, targetExt string) (bool, string) {
 }
 
 // convertFile converts a single audio file using ffmpeg
-func convertFile(sourcePath, targetExt string) error {
+func convertFile(sourcePath, targetExt, ffmpegPath string) error {
 	exists, targetPath := targetFileExists(sourcePath, targetExt)
 	if exists {
 		return fmt.Errorf("target already exists")
@@ -45,7 +39,7 @@ func convertFile(sourcePath, targetExt string) error {
 	// FFmpeg command with resource limits
 	// -threads 2: limit CPU usage per conversion
 	// -loglevel error: suppress verbose output
-	cmd := exec.Command("ffmpeg",
+	cmd := exec.Command(ffmpegPath,
 		"-i", sourcePath,
 		"-threads", "2",
 		"-loglevel", "error",
@@ -62,7 +56,7 @@ func convertFile(sourcePath, targetExt string) error {
 }
 
 // convertFiles processes files using a worker pool
-func convertFiles(files []string, targetExt string, workers int) ConversionStats {
+func convertFiles(files []string, targetExt string, workers int, ffmpegPath string) ConversionStats {
 	var stats ConversionStats
 	var wg sync.WaitGroup
 
@@ -89,7 +83,7 @@ func convertFiles(files []string, targetExt string, workers int) ConversionStats
 
 				// Convert
 				fmt.Printf("🔄 [Worker %d] Converting: %s\n", workerID, relPath)
-				err := convertFile(sourcePath, targetExt)
+				err := convertFile(sourcePath, targetExt, ffmpegPath)
 				
 				if err != nil {
 					if strings.Contains(err.Error(), "target already exists") {

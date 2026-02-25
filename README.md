@@ -13,10 +13,29 @@ A lightweight, cross-platform batch audio converter that automatically scans dir
 
 ## Prerequisites
 
-- **FFmpeg** must be installed and available in PATH
-  - Ubuntu/Debian: `sudo apt install ffmpeg`
-  - macOS: `brew install ffmpeg`
-  - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+**FFmpeg** is required for audio conversion.
+
+### Auto-Install (Recommended)
+The first time you run `auto-audio-convert`, if FFmpeg is not found, you'll be prompted to auto-download a portable version:
+
+```bash
+./auto-audio-convert --from=flac --to=mp3
+
+⚠️  FFmpeg not found!
+
+Options:
+  1. Auto-download portable ffmpeg (~50-80MB) to ~/.auto-audio-convert/
+  2. Skip (install manually)
+```
+
+Choose option **1** for automatic installation (downloads to your home directory, no sudo required).
+
+**For CI/automation:** Set `AUTO_INSTALL_FFMPEG=yes` to skip the prompt.
+
+### Manual Install
+- Ubuntu/Debian: `sudo apt install ffmpeg`
+- macOS: `brew install ffmpeg`
+- Windows: `winget install ffmpeg` or download from [ffmpeg.org](https://ffmpeg.org/download.html)
 
 ## Installation
 
