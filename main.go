@@ -11,7 +11,7 @@ import (
 
 const (
 	defaultMemLimitMB = 512
-	version           = "1.0.0" // Can be overridden by -ldflags at build time
+	version           = "1.1.0" // Can be overridden by -ldflags at build time
 )
 
 // resolveBitrate converts quality preset or validates custom bitrate
