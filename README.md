@@ -93,6 +93,20 @@ go build -o auto-audio-convert
 ./auto-audio-convert --from=flac --to=mp3
 ```
 
+### Force Overwrite Mode (v1.2.0+)
+```bash
+# By default, existing target files are skipped
+./auto-audio-convert --from=flac --to=mp3
+
+# Force re-conversion of ALL files (overwrites existing)
+./auto-audio-convert --from=flac --to=mp3 --overwrite
+
+# Re-encode existing MP3s with higher quality
+./auto-audio-convert --from=mp3 --to=mp3 --quality=high --overwrite
+
+# Useful for: fixing corrupted files, changing quality, updating codecs
+```
+
 ### Flags
 
 | Flag | Description | Default |
@@ -102,6 +116,7 @@ go build -o auto-audio-convert
 | `--to` | Target file extension | **(required)** |
 | `--quality` | Quality preset: `low` (128k), `medium` (192k), `high` (320k) | - |
 | `--bitrate` | Custom bitrate (e.g., `256k`, `320k`) - overrides `--quality` | - |
+| `--overwrite` | Force overwrite existing target files (skip existence check) | `false` |
 | `--workers` | Number of parallel workers | CPU cores / 2 |
 | `--version` | Show version | - |
 
