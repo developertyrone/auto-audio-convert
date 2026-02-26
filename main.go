@@ -11,7 +11,7 @@ import (
 
 const (
 	defaultMemLimitMB = 512
-	version           = "1.1.0" // Can be overridden by -ldflags at build time
+	version           = "1.2.0" // Can be overridden by -ldflags at build time
 )
 
 // resolveBitrate converts quality preset or validates custom bitrate
@@ -48,6 +48,7 @@ func main() {
 	workers := flag.Int("workers", runtime.NumCPU()/2, "Number of parallel workers")
 	quality := flag.String("quality", "", "Quality preset: low (128k), medium (192k), high (320k)")
 	bitrate := flag.String("bitrate", "", "Custom bitrate (e.g., 256k, 320k) - overrides quality preset")
+	overwrite := flag.Bool("overwrite", false, "Overwrite existing target files (skip existence check)")
 	showVersion := flag.Bool("version", false, "Show version")
 
 	flag.Parse()
@@ -74,6 +75,9 @@ func main() {
 	fmt.Printf("🔄 Converting: .%s → .%s\n", *sourceExt, *targetExt)
 	if audioBitrate != "" {
 		fmt.Printf("🎚️  Quality: %s\n", audioBitrate)
+	}
+	if *overwrite {
+		fmt.Printf("⚠️  Mode: OVERWRITE (existing files will be replaced)\n")
 	}
 	fmt.Printf("⚙️  Workers: %d (CPU limit: %d cores)\n", *workers, runtime.NumCPU()/2)
 	fmt.Printf("💾 Memory limit: %dMB\n\n", defaultMemLimitMB)
@@ -112,7 +116,7 @@ func main() {
 	fmt.Printf("📂 Found %d .%s file(s)\n\n", len(files), *sourceExt)
 
 	// Process with worker pool
-	stats := convertFiles(files, *targetExt, *workers, ffmpegPath, audioBitrate)
+	stats := convertFiles(files, *targetExt, *workers, ffmpegPath, audioBitrate, *overwrite)
 
 	// Summary
 	fmt.Printf("\n📊 Summary:\n")

@@ -30,9 +30,9 @@ func targetFileExists(sourcePath, targetExt string) (bool, string) {
 }
 
 // convertFile converts a single audio file using ffmpeg
-func convertFile(sourcePath, targetExt, ffmpegPath, bitrate string) error {
+func convertFile(sourcePath, targetExt, ffmpegPath, bitrate string, overwrite bool) error {
 	exists, targetPath := targetFileExists(sourcePath, targetExt)
-	if exists {
+	if exists && !overwrite {
 		return fmt.Errorf("target already exists")
 	}
 
@@ -62,7 +62,7 @@ func convertFile(sourcePath, targetExt, ffmpegPath, bitrate string) error {
 }
 
 // convertFiles processes files using a worker pool
-func convertFiles(files []string, targetExt string, workers int, ffmpegPath, bitrate string) ConversionStats {
+func convertFiles(files []string, targetExt string, workers int, ffmpegPath, bitrate string, overwrite bool) ConversionStats {
 	var stats ConversionStats
 	var wg sync.WaitGroup
 
@@ -78,9 +78,9 @@ func convertFiles(files []string, targetExt string, workers int, ffmpegPath, bit
 			for sourcePath := range jobs {
 				relPath := filepath.Base(sourcePath)
 
-				// Check if already converted
+				// Check if already converted (unless overwrite is enabled)
 				exists, targetPath := targetFileExists(sourcePath, targetExt)
-				if exists {
+				if exists && !overwrite {
 					fmt.Printf("⏭️  [Worker %d] Skipped: %s (target exists: %s)\n",
 						workerID, relPath, filepath.Base(targetPath))
 					atomic.AddInt32(&stats.Skipped, 1)
@@ -88,8 +88,12 @@ func convertFiles(files []string, targetExt string, workers int, ffmpegPath, bit
 				}
 
 				// Convert
-				fmt.Printf("🔄 [Worker %d] Converting: %s\n", workerID, relPath)
-				err := convertFile(sourcePath, targetExt, ffmpegPath, bitrate)
+				if exists && overwrite {
+					fmt.Printf("🔄 [Worker %d] Overwriting: %s\n", workerID, relPath)
+				} else {
+					fmt.Printf("🔄 [Worker %d] Converting: %s\n", workerID, relPath)
+				}
+				err := convertFile(sourcePath, targetExt, ffmpegPath, bitrate, overwrite)
 
 				if err != nil {
 					if strings.Contains(err.Error(), "target already exists") {
